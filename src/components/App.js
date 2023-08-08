@@ -7,6 +7,7 @@ import { StartScreen } from './StartScreen';
 import { Question } from './Question';
 import { NextButton } from './NextButton';
 import { Progress } from './Progress';
+import { FinishScreen } from './FinishScreen';
 
 const initialState = {
   questions: [],
@@ -16,6 +17,7 @@ const initialState = {
   index: 0,
   answer: null,
   points: 0,
+  highscore: 0,
 };
 
 const reducer = (state, action) => {
@@ -36,19 +38,23 @@ const reducer = (state, action) => {
             ? state.points + question.points
             : state.points,
       };
-
     case 'nextQuestion':
       return { ...state, index: state.index + 1, answer: null };
+    case 'finish':
+      return {
+        ...state,
+        status: 'finished',
+        highscore:
+          state.points > state.highscore ? state.points : state.highscore,
+      };
     default:
       throw new Error('Action is unknown');
   }
 };
 
 export const App = () => {
-  const [{ questions, status, index, answer, points }, dispatch] = useReducer(
-    reducer,
-    initialState
-  );
+  const [{ questions, status, index, answer, points, highscore }, dispatch] =
+    useReducer(reducer, initialState);
 
   const numQuestions = questions.length;
   const maxPossiblePoints = questions.reduce((acc, cur) => acc + cur.points, 0);
@@ -60,6 +66,22 @@ export const App = () => {
       .catch(err => dispatch({ type: 'dataFailed' }));
   }, []);
 
+  const startQuiz = () => {
+    dispatch({ type: 'start' });
+  };
+
+  const handleAnswer = answer => {
+    dispatch({ type: 'newAnswer', payload: answer });
+  };
+
+  const handleNextQuestion = () => {
+    dispatch({ type: 'nextQuestion' });
+  };
+
+  const handleFinishScreen = () => {
+    dispatch({ type: 'finish' });
+  };
+
   return (
     <div className="app">
       <Header />
@@ -67,7 +89,7 @@ export const App = () => {
         {status === 'loading' && <Loader />}
         {status === 'error' && <Error />}
         {status === 'ready' && (
-          <StartScreen numQuestions={numQuestions} dispatch={dispatch} />
+          <StartScreen numQuestions={numQuestions} startQuiz={startQuiz} />
         )}
         {status === 'active' && (
           <>
@@ -80,11 +102,24 @@ export const App = () => {
             />
             <Question
               question={questions[index]}
-              dispatch={dispatch}
+              onAnswer={handleAnswer}
               answer={answer}
             />
-            <NextButton dispatch={dispatch} answer={answer} />
+            <NextButton
+              onNextQuestion={handleNextQuestion}
+              onFinishQuiz={handleFinishScreen}
+              answer={answer}
+              numQuestions={numQuestions}
+              index={index}
+            />
           </>
+        )}
+        {status === 'finished' && (
+          <FinishScreen
+            points={points}
+            maxPossiblePoints={maxPossiblePoints}
+            highscore={highscore}
+          />
         )}
       </Main>
     </div>

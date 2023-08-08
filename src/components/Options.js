@@ -1,4 +1,4 @@
-export const Options = ({ question, dispatch, answer }) => {
+export const Options = ({ question, onAnswer, answer }) => {
   const hasAnswered = answer !== null;
 
   return (
@@ -14,7 +14,7 @@ export const Options = ({ question, dispatch, answer }) => {
           }`}
           key={option}
           disabled={hasAnswered}
-          onClick={() => dispatch({ type: 'newAnswer', payload: index })}
+          onClick={() => onAnswer(index)}
         >
           {option}
         </button>
