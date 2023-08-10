@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react';
+
 import { Header } from './Header';
 import { Main } from './Main';
 import { Loader } from './Loader';
@@ -8,6 +9,10 @@ import { Question } from './Question';
 import { NextButton } from './NextButton';
 import { Progress } from './Progress';
 import { FinishScreen } from './FinishScreen';
+import { Footer } from './Footer';
+import { Timer } from './Timer';
+
+const SEC_PER_QUESTION = 30;
 
 const initialState = {
   questions: [],
@@ -18,6 +23,7 @@ const initialState = {
   answer: null,
   points: 0,
   highscore: 0,
+  secondsRemaning: null,
 };
 
 const reducer = (state, action) => {
@@ -27,7 +33,11 @@ const reducer = (state, action) => {
     case 'dataFailed':
       return { ...state, status: 'error' };
     case 'start':
-      return { ...state, status: 'active' };
+      return {
+        ...state,
+        status: 'active',
+        secondsRemaning: state.questions.length * SEC_PER_QUESTION,
+      };
     case 'newAnswer':
       const question = state.questions.at(state.index);
       return {
@@ -47,14 +57,28 @@ const reducer = (state, action) => {
         highscore:
           state.points > state.highscore ? state.points : state.highscore,
       };
+    case 'restart':
+      return { ...initialState, questions: state.questions, status: 'ready' };
+    case 'tick':
+      return {
+        ...state,
+        secondsRemaning: state.secondsRemaning - 1,
+        status: state.secondsRemaning === 0 ? 'finished' : state.status,
+        highscore:
+          state.secondsRemaining === 0
+            ? Math.max(state.points, state.highscore)
+            : state.highscore,
+      };
     default:
       throw new Error('Action is unknown');
   }
 };
 
 export const App = () => {
-  const [{ questions, status, index, answer, points, highscore }, dispatch] =
-    useReducer(reducer, initialState);
+  const [
+    { questions, status, index, answer, points, highscore, secondsRemaning },
+    dispatch,
+  ] = useReducer(reducer, initialState);
 
   const numQuestions = questions.length;
   const maxPossiblePoints = questions.reduce((acc, cur) => acc + cur.points, 0);
@@ -82,6 +106,14 @@ export const App = () => {
     dispatch({ type: 'finish' });
   };
 
+  const handleRestartQuiz = () => {
+    dispatch({ type: 'restart' });
+  };
+
+  const handleTimerTick = () => {
+    dispatch({ type: 'tick' });
+  };
+
   return (
     <div className="app">
       <Header />
@@ -105,13 +137,19 @@ export const App = () => {
               onAnswer={handleAnswer}
               answer={answer}
             />
-            <NextButton
-              onNextQuestion={handleNextQuestion}
-              onFinishQuiz={handleFinishScreen}
-              answer={answer}
-              numQuestions={numQuestions}
-              index={index}
-            />
+            <Footer>
+              <Timer
+                onTimerTick={handleTimerTick}
+                secondsRemaning={secondsRemaning}
+              />
+              <NextButton
+                onNextQuestion={handleNextQuestion}
+                onFinishQuiz={handleFinishScreen}
+                answer={answer}
+                numQuestions={numQuestions}
+                index={index}
+              />
+            </Footer>
           </>
         )}
         {status === 'finished' && (
@@ -119,6 +157,7 @@ export const App = () => {
             points={points}
             maxPossiblePoints={maxPossiblePoints}
             highscore={highscore}
+            onRestartQuiz={handleRestartQuiz}
           />
         )}
       </Main>
