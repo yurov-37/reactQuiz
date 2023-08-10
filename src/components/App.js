@@ -1,4 +1,5 @@
 import { useEffect, useReducer } from 'react';
+import jsonData from '../data/questions.json';
 
 import { Header } from './Header';
 import { Main } from './Main';
@@ -83,11 +84,16 @@ export const App = () => {
   const numQuestions = questions.length;
   const maxPossiblePoints = questions.reduce((acc, cur) => acc + cur.points, 0);
 
+  // useEffect(() => {
+  //   fetch('http://localhost:8000/questions')
+  //     .then(res => res.json())
+  //     .then(data => dispatch({ type: 'dataReceived', payload: data }))
+  //     .catch(err => dispatch({ type: 'dataFailed' }));
+  // }, []);
+
   useEffect(() => {
-    fetch('http://localhost:8000/questions')
-      .then(res => res.json())
-      .then(data => dispatch({ type: 'dataReceived', payload: data }))
-      .catch(err => dispatch({ type: 'dataFailed' }));
+    console.log(jsonData.questions);
+    dispatch({ type: 'dataReceived', payload: jsonData.questions });
   }, []);
 
   const startQuiz = () => {
